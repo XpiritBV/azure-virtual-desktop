@@ -1,0 +1,14 @@
+stages:
+- stage: 'build_arm'
+  jobs:
+    - template: ../templates/jobs/build.bicep-to-arm.yml
+      parameters:
+        Name: Application
+        BicepFilePath: 'src/Modules/Application.bicep'
+        ParametersFolder: 'parameters/infrastructure'
+
+    - template: ../templates/jobs/build.bicep-to-arm.yml
+      parameters:
+        Name: Machines
+        BicepFilePath: 'src/Modules/Machines.bicep'
+        ParametersFolder: 'parameters/infrastructure'

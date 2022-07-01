@@ -1,0 +1,40 @@
+parameters:
+- name: AzureResourceManagerConnection
+  type: string
+- name: SubscriptionId
+  type: string
+- name: Location
+  type: string
+  default: 'West Europe'
+- name: StorageAccountName
+  type: string
+- name: SoftwareFileShare
+  type: string
+
+stages:
+- stage:
+  dependsOn: 'build_arms'
+  displayName: 'Run image builder'
+  jobs: 
+    - deployment: run_image_builder
+      timeoutInMinutes: 180 # how long to run the job before automatically cancelling
+      environment: "test"
+      strategy: 
+        runOnce:
+          deploy:
+            steps:
+              - download: current
+
+              - template: ../templates/steps/set.subscriptionId.yml
+                parameters:
+                  AzureResourceManagerConnection: ${{ parameters.AzureResourceManagerConnection }}
+                  SubscriptionId: ${{ parameters.SubscriptionId }}
+
+              - template: steps/deploy.image.arms.yml
+                parameters:
+                  AzureResourceManagerConnection: ${{ parameters.AzureResourceManagerConnection }}
+                  SubscriptionId: $(Set.SubscriptionId)
+                  Location: ${{ parameters.Location }}
+                  DeploymentMode: Incremental
+                  StorageAccountName: ${{ parameters.StorageAccountName }}
+                  SoftwareFileShare: ${{ parameters.SoftwareFileShare }}

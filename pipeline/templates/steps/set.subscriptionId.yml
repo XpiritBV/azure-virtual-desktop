@@ -1,0 +1,18 @@
+parameters:
+- name: AzureResourceManagerConnection
+  type: string
+- name: SubscriptionId
+  type: string
+
+steps:
+  - task: AzurePowerShell@5
+    name: "Set"
+    displayName: "Set SubscriptionId to ${{ parameters.SubscriptionId }}"
+    inputs:
+      azureSubscription: ${{ parameters.AzureResourceManagerConnection }}
+      ScriptType: InlineScript
+      inline: |
+        $subscriptionId = Get-AzSubscription -SubscriptionId "${{ parameters.SubscriptionId }}"
+        Write-Host "SubscriptionId=$subscriptionId"
+        Write-Host "##vso[task.setvariable variable=SubscriptionId;isOutput=true]$subscriptionId"
+      azurePowerShellVersion: LatestVersion

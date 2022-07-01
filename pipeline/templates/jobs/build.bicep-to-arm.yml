@@ -1,0 +1,27 @@
+parameters:
+- name: Name
+- name: BicepFilePath
+- name: ParametersFolder
+  type: string
+  default: ""
+
+jobs:
+  - job: build_bicep_${{ parameters.Name }}
+    displayName: Create ARM Templates for ${{ parameters.Name }}
+    steps:
+      - task: PowerShell@2
+        displayName: Build BICEP ${{ parameters.Name }}
+        inputs:
+          targetType: 'inline'
+          script: |
+            az bicep build --file ${{ parameters.BicepFilePath }} --outfile $(build.artifactstagingdirectory)/mainDeployment.json --debug
+          pwsh: true
+      - task: CopyFiles@2
+        displayName: "Copy parameters"
+        condition: ne('${{ parameters.ParametersFolder }}', '')
+        inputs:
+          SourceFolder: ${{ parameters.ParametersFolder }}
+          Contents: "*.json"
+          TargetFolder: "$(build.artifactstagingdirectory)"
+      - publish: $(build.artifactstagingdirectory)
+        artifact: ARM_${{ parameters.Name }}

@@ -1,0 +1,47 @@
+trigger:
+  batch: true
+  branches:
+    include:
+    - main
+
+pool: 
+  vmImage: ubuntu-latest
+
+variables:
+  - group: 'AVD'
+  - name: storageAccountName
+    value: stavdimagesoftware
+  - name: softwareFileShare
+    value: software 
+
+stages:
+  - stage: 'build_arms'
+    displayName: 'Build Bicep to ARM'
+    jobs:
+      - template: pipeline/templates/jobs/build.bicep-to-arm.yml
+        parameters:
+          Name: Gallery
+          BicepFilePath: 'src/Modules/Gallery.bicep'
+
+      - template: pipeline/templates/jobs/build.bicep-to-arm.yml
+        parameters:
+          Name: Image
+          BicepFilePath: 'src/Modules/Image.bicep'
+
+  - stage: finalize_stage
+    displayName: Finalize build
+    jobs:
+    - job: finalize_build
+      displayName: Finalize
+      timeoutInMinutes: 0 # take maximum time available in the pool
+      steps:
+      - checkout: self  # self represents the repo where the initial Pipelines YAML file was found
+        clean: true  # if true, execute `execute git clean -ffdx && git reset --hard HEAD` before fetching
+        persistCredentials: true  # if 'true', leave the OAuth token in the Git config after the initial fetch; defaults to false
+
+  - template: pipeline/builder/build-image.yml
+    parameters:
+      AzureResourceManagerConnection: $(AzureResourceManagerConnection)
+      SubscriptionId: $(SubscriptionId.Prod)
+      StorageAccountName: $(storageAccountName)
+      SoftwareFileShare: $(softwareFileShare)

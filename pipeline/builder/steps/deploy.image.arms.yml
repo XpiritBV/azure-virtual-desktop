@@ -1,0 +1,87 @@
+parameters:
+- name: AzureResourceManagerConnection
+  type: string
+- name: SubscriptionId
+  type: string
+- name: Location
+  type: string
+- name: DeploymentMode
+  type: string
+- name: StorageAccountName
+  type: string
+- name: SoftwareFileShare
+  type: string
+
+steps: 
+  - checkout: self  # self represents the repo where the initial Pipelines YAML file was found
+    clean: true  # if true, execute `execute git clean -ffdx && git reset --hard HEAD` before fetching
+    persistCredentials: true  # if 'true', leave the OAuth token in the Git config after the initial fetch; defaults to false
+
+  - task: AzureResourceManagerTemplateDeployment@3
+    displayName: ${{ parameters.DeploymentMode }} Gallery
+    inputs:
+      azureResourceManagerConnection: '${{ parameters.AzureResourceManagerConnection }}'
+      deploymentScope: 'Subscription'
+      subscriptionId: ${{ parameters.SubscriptionId }}
+      location: '${{ parameters.Location }}'
+      templateLocation: 'Linked artifact'
+      csmFile: '$(Agent.BuildDirectory)/ARM_Gallery/mainDeployment.json'
+      deploymentMode: ${{ parameters.DeploymentMode }}
+      deploymentOutputs: mainDeployment_Gallery
+      overrideParameters: -softwareStorageAccountName ${{ parameters.StorageAccountName }}
+
+  - task: AzureCLI@2
+    displayName: Upload latest software and install scripts to Software Azure File Share
+    inputs:
+      azureSubscription: '${{ parameters.AzureResourceManagerConnection }}'
+      scriptType: 'pscore'
+      scriptLocation: 'inlineScript'
+      inlineScript: |
+        Write-Host 'SharedImageGalleryId = $(mainDeployment_Gallery.avdSigId.value)'
+
+        $shareName = '${{ parameters.SoftwareFileShare }}-$(Build.BuildId)'
+        Write-Host 'Creating file share $($shareName) and uploading software to it'
+        az storage share create --subscription ${{ parameters.SubscriptionId }} --name $shareName --account-name ${{ parameters.StorageAccountName }} --fail-on-exist
+
+        az storage directory create --name Install --subscription ${{ parameters.SubscriptionId }} --share-name $shareName --account-name ${{ parameters.StorageAccountName }}
+        az storage file upload-batch --subscription ${{ parameters.SubscriptionId }} --destination $shareName/Install --account-name ${{ parameters.StorageAccountName }} --source $(System.DefaultWorkingDirectory)/src/Scripts/installNewMachine/sysprep/Install
+
+  - task: AzureResourceManagerTemplateDeployment@3
+    displayName: ${{ parameters.DeploymentMode }} Image 
+    inputs:
+      azureResourceManagerConnection: '${{ parameters.AzureResourceManagerConnection }}'
+      deploymentScope: 'Subscription'
+      subscriptionId: ${{ parameters.SubscriptionId }}
+      location: '${{ parameters.Location }}'
+      templateLocation: 'Linked artifact'
+      csmFile: '$(Agent.BuildDirectory)/ARM_Image/mainDeployment.json'
+      deploymentMode: ${{ parameters.DeploymentMode }}
+      deploymentOutputs: mainDeployment_Image
+      overrideParameters: -softwareStorageAccountName ${{ parameters.StorageAccountName }} -softwareFileShare ${{ parameters.SoftwareFileShare }}-$(Build.BuildId) -sharedImageGalleryId $(mainDeployment_Gallery.avdSigId.value)
+
+  - task: AzureCLI@2
+    displayName: Wait for image builder
+    inputs:
+      azureSubscription: '${{ parameters.AzureResourceManagerConnection }}'
+      scriptType: 'pscore'
+      scriptLocation: 'inlineScript'
+      inlineScript: |
+        Write-Host 'Waiting for image builder $(mainDeployment_Image.imageTemplateId.value)'
+        az image builder wait --custom "lastRunStatus.runState!='Running'" --ids $(mainDeployment_Image.imageTemplateId.value) --timeout 5400
+        $status = az image builder show --ids  $(mainDeployment_Image.imageTemplateId.value) | ConvertFrom-Json
+        if ($status.lastRunStatus.runState -ne 'Succeeded') { throw "Image builder exited with $($status.lastRunStatus.runState) - $($status.lastRunStatus.runSubState)" }
+
+  - task: AzureCLI@2
+    displayName: Cleanup software share
+    condition: succeededOrFailed()
+    inputs:
+      azureSubscription: '${{ parameters.AzureResourceManagerConnection }}'
+      scriptType: 'pscore'
+      scriptLocation: 'inlineScript'
+      inlineScript: |
+        $shareName = '${{ parameters.SoftwareFileShare }}-$(Build.BuildId)'
+        $share = az storage share exists --subscription ${{ parameters.SubscriptionId }} --name $shareName --account-name ${{ parameters.StorageAccountName }} | ConvertFrom-Json
+
+        if ($share.exists) {
+            az storage share delete --subscription ${{ parameters.SubscriptionId }} --name $shareName --account-name ${{ parameters.StorageAccountName }}
+        }

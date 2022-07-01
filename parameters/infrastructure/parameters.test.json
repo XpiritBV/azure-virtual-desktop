@@ -1,0 +1,27 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "environment": {
+            "value": "test"
+        },
+        "location": {
+            "value": "westeurope"
+        },
+        "adminGroupPrincipalId": {
+            "value":""
+        },
+        "userGroupPrincipalId": {
+            "value":""
+        },
+        "appvnetaddressPrefix":{
+            "value":"10.221.0.0/16"
+        },
+        "appsubnetPrefix":{
+            "value":"10.221.1.0/24"
+        },
+        "vmsize":{
+            "value":"Standard_DS1_v2"
+        }
+   }
+}

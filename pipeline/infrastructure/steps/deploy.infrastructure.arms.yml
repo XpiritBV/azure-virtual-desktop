@@ -1,0 +1,56 @@
+parameters:
+- name: AzureResourceManagerConnection
+  type: string
+- name: SubscriptionId
+  type: string
+- name: Location
+  type: string
+- name: Environment
+  type: string
+- name: DeploymentMode
+  type: string
+
+
+steps: 
+  - checkout: self  # self represents the repo where the initial Pipelines YAML file was found
+    clean: true  # if true, execute `execute git clean -ffdx && git reset --hard HEAD` before fetching
+    persistCredentials: true  # if 'true', leave the OAuth token in the Git config after the initial fetch; defaults to false
+
+  - task: AzureResourceManagerTemplateDeployment@3
+    displayName: ${{ parameters.DeploymentMode }} Application 
+    inputs:
+      azureResourceManagerConnection: '${{ parameters.AzureResourceManagerConnection }}'
+      deploymentScope: 'Subscription'
+      subscriptionId: ${{ parameters.SubscriptionId }}
+      location: '${{ parameters.Location }}'
+      templateLocation: 'Linked artifact'
+      csmFile: '$(Agent.BuildDirectory)/ARM_Application/mainDeployment.json'
+      csmParametersFile: '$(Agent.BuildDirectory)/ARM_Application/parameters.${{ parameters.Environment }}.json'
+      deploymentMode: ${{ parameters.DeploymentMode }}
+      deploymentOutputs: mainDeployment_Application
+      # overrideParameters: -adminGroupPrincipalId $(adminGroupPrincipalId) -userGroupPrincipalId $(userGroupPrincipalId)
+
+  - task: AzureCLI@2
+    displayName: Resolve image gallery id
+    inputs:
+      azureSubscription: '${{ parameters.AzureResourceManagerConnection }}'
+      scriptType: 'pscore'
+      scriptLocation: 'inlineScript'
+      inlineScript: |
+        $image = az sig image-version list --gallery-name avdsharedimagegallery --gallery-image-definition avd-shared-image --resource-group rg-avd-image-gallery --subscription $(SubscriptionId.Prod) | ConvertFrom-Json | Sort-Object -Property {$_.publishingProfile.publishedDate} -Descending | Select-Object -First 1
+        Write-Host "##vso[task.setvariable variable=sharedGalleryImageId;]$($image.id)"
+
+  - task: AzureResourceManagerTemplateDeployment@3
+    displayName: ${{ parameters.DeploymentMode }} Machines
+    inputs:
+      azureResourceManagerConnection: '${{ parameters.AzureResourceManagerConnection }}'
+      deploymentScope: 'Subscription'
+      subscriptionId: ${{ parameters.SubscriptionId }}
+      location: '${{ parameters.Location }}'
+      templateLocation: 'Linked artifact'
+      csmFile: '$(Agent.BuildDirectory)/ARM_Machines/mainDeployment.json'
+      csmParametersFile: '$(Agent.BuildDirectory)/ARM_Machines/parameters.${{ parameters.Environment }}.json'
+      deploymentMode: ${{ parameters.DeploymentMode }}
+      deploymentOutputs: mainDeployment_Machines
+      # overrideParameters: -localAdminName $(LocalAdminName) -localAdminPassword $(LocalAdminPassword) -adminGroupPrincipalId $(adminGroupPrincipalId) -userGroupPrincipalId $(userGroupPrincipalId) -registrationInfoToken $(mainDeployment_Application.registrationInfoToken.value) -bootStorageAccountName $(mainDeployment_Application.bootStorageAccountName.value) -bootContainerName $(mainDeployment_Application.bootContainerName.value) -sharedGalleryImageId $(sharedGalleryImageId)
+      overrideParameters: -localAdminName $(LocalAdminName) -localAdminPassword $(LocalAdminPassword) -registrationInfoToken $(mainDeployment_Application.registrationInfoToken.value) -sharedGalleryImageId $(sharedGalleryImageId)
