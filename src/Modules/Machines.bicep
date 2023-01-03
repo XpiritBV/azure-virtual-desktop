@@ -11,6 +11,7 @@ param registrationInfoToken string
 param appvnetaddressPrefix string = 'ignored'
 param appsubnetPrefix string = 'ignored'
 param sharedGalleryImageId string
+param FSLogixProfileStoragePrefix string
 
 var hostpoolName = 'avd-hostpool-${environment}'
 
@@ -31,5 +32,6 @@ module vm 'virtualMachine/deploy.bicep' = {
     userGroupPrincipalId: userGroupPrincipalId
     environment: environment
     sharedGalleryImageId: sharedGalleryImageId
+    FSLogixProfileStoragePrefix: FSLogixProfileStoragePrefix
   }
 }

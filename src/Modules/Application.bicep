@@ -7,6 +7,7 @@ param userGroupPrincipalId string
 param appvnetaddressPrefix string
 param appsubnetPrefix string
 param vmSize string = 'ignored'
+param FSLogixProfileStoragePrefix string
 
 var hostpoolName = 'avd-hostpool-${environment}'
 
@@ -28,6 +29,7 @@ module vd 'virtualDesktop/deploy.bicep' = {
     appvnetaddressPrefix: appvnetaddressPrefix
     appsubnetPrefix: appsubnetPrefix
     logAnalyticsWorkspaceName: 'law-avd-${environment}-001'
+    FSLogixProfileStoragePrefix: FSLogixProfileStoragePrefix
   }
 }
 

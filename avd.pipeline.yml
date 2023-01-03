@@ -20,9 +20,9 @@ stages:
       Environment: 'test'
       SubscriptionId: $(SubscriptionId.Test)
 
-  - template: pipeline/infrastructure/deploy-avd-infrastructure.yml 
-    parameters:
-      VariableGroup: 'AVD'
-      AzureResourceManagerConnection: $(AzureResourceManagerConnection)
-      Environment: 'prod' 
-      SubscriptionId: $(SubscriptionId.Prod)
+  # - template: pipeline/infrastructure/deploy-avd-infrastructure.yml 
+  #   parameters:
+  #     VariableGroup: 'AVD'
+  #     AzureResourceManagerConnection: $(AzureResourceManagerConnection)
+  #     Environment: 'prod' 
+  #     SubscriptionId: $(SubscriptionId.Prod)

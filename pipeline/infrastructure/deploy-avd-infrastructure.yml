@@ -26,15 +26,10 @@ stages:
             steps:
               - download: current
 
-              - template: ../templates/steps/set.subscriptionId.yml
-                parameters:
-                  AzureResourceManagerConnection: ${{ parameters.AzureResourceManagerConnection }}
-                  SubscriptionId: ${{ parameters.SubscriptionId }}
-
               - template: steps/deploy.infrastructure.arms.yml
                 parameters:
                   AzureResourceManagerConnection: ${{ parameters.AzureResourceManagerConnection }}
-                  SubscriptionId: $(Set.SubscriptionId)
+                  SubscriptionId: ${{ parameters.SubscriptionId }}
                   Location: ${{ parameters.Location }}
                   Environment: ${{ parameters.Environment }}
                   DeploymentMode: Incremental

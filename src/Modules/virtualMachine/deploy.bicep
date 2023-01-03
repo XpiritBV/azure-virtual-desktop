@@ -16,6 +16,7 @@ param vmSize string
 param adminGroupPrincipalId string
 param userGroupPrincipalId string
 param sharedGalleryImageId string
+param FSLogixProfileStoragePrefix string
 
 resource rg 'Microsoft.Resources/resourceGroups@2020-06-01' = {
   name : resourceGroupName
@@ -39,5 +40,6 @@ module vmScaleSet 'vmScaleSet.bicep' = {
     userGroupPrincipalId: userGroupPrincipalId
     environment: environment
     sharedGalleryImageId: sharedGalleryImageId
+    FSLogixProfileStoragePrefix: FSLogixProfileStoragePrefix
   }
 }
