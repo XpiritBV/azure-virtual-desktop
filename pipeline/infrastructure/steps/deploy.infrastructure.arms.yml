@@ -28,7 +28,7 @@ steps:
       csmParametersFile: '$(Agent.BuildDirectory)/ARM_Application/parameters.${{ parameters.Environment }}.json'
       deploymentMode: ${{ parameters.DeploymentMode }}
       deploymentOutputs: mainDeployment_Application
-      # overrideParameters: -adminGroupPrincipalId $(adminGroupPrincipalId) -userGroupPrincipalId $(userGroupPrincipalId)
+      overrideParameters: -FSLogixProfileStoragePrefix $(FSLogixProfileStoragePrefix) #-adminGroupPrincipalId $(adminGroupPrincipalId) -userGroupPrincipalId $(userGroupPrincipalId)
 
   - task: AzureCLI@2
     displayName: Resolve image gallery id
@@ -37,7 +37,7 @@ steps:
       scriptType: 'pscore'
       scriptLocation: 'inlineScript'
       inlineScript: |
-        $image = az sig image-version list --gallery-name avdsharedimagegallery --gallery-image-definition avd-shared-image --resource-group rg-avd-image-gallery --subscription $(SubscriptionId.Prod) | ConvertFrom-Json | Sort-Object -Property {$_.publishingProfile.publishedDate} -Descending | Select-Object -First 1
+        $image = az sig image-version list --gallery-name avdsharedimagegallery --gallery-image-definition avd-shared-image --resource-group rg-avd-image-gallery --subscription $(SubscriptionId.Prod) | ConvertFrom-Json | ? {$_.ProvisioningState -eq 'Succeeded'} | Sort-Object -Property {$_.publishingProfile.publishedDate} -Descending | Select-Object -First 1
         Write-Host "##vso[task.setvariable variable=sharedGalleryImageId;]$($image.id)"
 
   - task: AzureResourceManagerTemplateDeployment@3
@@ -53,4 +53,4 @@ steps:
       deploymentMode: ${{ parameters.DeploymentMode }}
       deploymentOutputs: mainDeployment_Machines
       # overrideParameters: -localAdminName $(LocalAdminName) -localAdminPassword $(LocalAdminPassword) -adminGroupPrincipalId $(adminGroupPrincipalId) -userGroupPrincipalId $(userGroupPrincipalId) -registrationInfoToken $(mainDeployment_Application.registrationInfoToken.value) -bootStorageAccountName $(mainDeployment_Application.bootStorageAccountName.value) -bootContainerName $(mainDeployment_Application.bootContainerName.value) -sharedGalleryImageId $(sharedGalleryImageId)
-      overrideParameters: -localAdminName $(LocalAdminName) -localAdminPassword $(LocalAdminPassword) -registrationInfoToken $(mainDeployment_Application.registrationInfoToken.value) -sharedGalleryImageId $(sharedGalleryImageId)
+      overrideParameters: -localAdminName $(LocalAdminName) -localAdminPassword $(LocalAdminPassword) -registrationInfoToken $(mainDeployment_Application.registrationInfoToken.value) -sharedGalleryImageId $(sharedGalleryImageId) -FSLogixProfileStoragePrefix $(FSLogixProfileStoragePrefix)

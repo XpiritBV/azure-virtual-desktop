@@ -9,8 +9,6 @@ pool:
 
 variables:
   - group: 'AVD'
-  - name: storageAccountName
-    value: stavdimagesoftware
   - name: softwareFileShare
     value: software 
 
@@ -43,5 +41,5 @@ stages:
     parameters:
       AzureResourceManagerConnection: $(AzureResourceManagerConnection)
       SubscriptionId: $(SubscriptionId.Prod)
-      StorageAccountName: $(storageAccountName)
+      StorageAccountName: $(softwareStorageAccountName)
       SoftwareFileShare: $(softwareFileShare)

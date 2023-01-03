@@ -11,6 +11,7 @@ param adminGroupPrincipalId string
 param userGroupPrincipalId string
 param environment string
 param sharedGalleryImageId string
+param FSLogixProfileStoragePrefix string
 
 resource vnet 'Microsoft.Network/virtualNetworks@2021-08-01' existing = {
   name: vnetName
@@ -69,12 +70,16 @@ resource vmScaleSet 'Microsoft.Compute/virtualMachineScaleSets@2022-03-01' = {
               typeHandlerVersion: '2.77'
               autoUpgradeMinorVersion: true
               settings: {
-                ModulesUrl: 'https://github.com/patrick-de-kruijf/AVD-Files/blob/main/avd/kdi/Configuration.zip?raw=true'
+                ModulesUrl: 'https://github.com/XpiritBV/azure-virtual-desktop/blob/main/src/Scripts/addMachinesToHostPool/Configuration.zip?raw=true'
                 ConfigurationFunction: 'Configuration.ps1\\AddSessionHost'
                 Properties:{
                   hostPoolName: hostpoolName
+                }
+              }
+              protectedSettings: {
+                Properties: {
                   registrationInfoToken: registrationInfoToken
-                  profileLocation: '\\\\prof${environment}.file.core.windows.net\\profilecontainers'
+                  profileLocation: '\\\\${FSLogixProfileStoragePrefix}${environment}.file.core.windows.net\\profilecontainers'
                 }
               }
             }

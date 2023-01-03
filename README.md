@@ -27,12 +27,14 @@ You will need to create two environments:
 2. Prod
 
 ## Variable Group(s)
-AVD
+Name: **AVD**
 - Subscription.Test = `subscriptionID for test environment`
-- Subscription.Prod = `subscriptionID for prod environment`
+- Subscription.Prod = `subscriptionID for prod environment, can be the same as for test`
 - AzureResourceManagerConnection = `Name of your Azure Service Connection`
 - LocalAdminName = `username of the localadmin account for the VMs`
 - LocalAdminPassword = `password of the localadmin account for the VMs`
+- FSLogixProfileStoragePrefix = `prefix for the FSLogix profile storage account`
+- softwareStorageAccountName - `name of the storage account for the software`
 
 ## Pipeline(s)
 Two (2) pipelines are used:
@@ -40,7 +42,6 @@ Two (2) pipelines are used:
 2. Azure Virtual Desktop and everything related `avd.pipeline.yml`
 
 You will have to execute the `build.pipeline.yml` first, in order for the `avd.pipeline.yml` to use a valid image
-
 
 # Potential issues / bugs
 

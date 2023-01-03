@@ -24,6 +24,7 @@ param subnetName string
 param storageaccountkind string = 'FileStorage'
 param storageaccountglobalRedundancy string = 'Premium_LRS'
 param fileshareFolderName string = 'profilecontainers'
+param FSLogixProfileStoragePrefix string
 
 param adminGroupPrincipalId string
 param userGroupPrincipalId string
@@ -39,7 +40,7 @@ module avdFileServices './avdFileServices.bicep' = {
   scope: resourceGroup(rgavd.name)
   params: {
     storageaccountlocation: location
-    storageaccountName: 'prof${environment}'
+    storageaccountName: '${FSLogixProfileStoragePrefix}${environment}'
     storageaccountkind: storageaccountkind
     storageaccountglobalRedundancy: storageaccountglobalRedundancy
     fileshareFolderName: fileshareFolderName
